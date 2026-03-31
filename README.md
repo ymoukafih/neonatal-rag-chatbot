@@ -82,57 +82,7 @@ uv run python main.py
 # Open your browser at http://localhost:7860
 ```
 
----
 
-## 📁 Project Structure
-
-neonatal-rag-chatbot/
-├── src/
-│ ├── config/
-│ │ ├── settings.py # Pydantic settings — reads .env
-│ │ └── logging_config.py # Structured logging with file rotation
-│ ├── ingestion/
-│ │ └── loader.py # JSON data loader + chunker
-│ ├── vectorstore/
-│ │ └── store.py # ChromaDB build / load / retrieve
-│ ├── rag/
-│ │ ├── chain.py # LangChain RAG chain with memory
-│ │ └── prompts.py # All LLM prompts (versioned)
-│ ├── database/
-│ │ ├── models.py # SQLite schema + table creation
-│ │ └── crud.py # Session and message operations
-│ ├── agents/
-│ │ ├── state.py # LangGraph agent state
-│ │ ├── pubmed_agent.py # LangGraph graph definition
-│ │ └── tools/
-│ │ ├── pubmed_tool.py # PubMed Entrez API search
-│ │ ├── pmc_tool.py # PMC BioC full-text fetcher
-│ │ └── ingest_tool.py # ChromaDB ingestion + deduplication
-│ └── ui/
-│ └── app.py # Gradio chat interface
-├── scripts/
-│ ├── ingest.py # Ingest local JSON data
-│ ├── run_agent.py # Run PubMed knowledge builder
-│ └── inspect_db.py # Inspect ChromaDB statistics
-├── tests/
-│ ├── test_settings.py
-│ ├── test_ingestion.py
-│ ├── test_crud.py
-│ └── test_vectorstore.py
-├── data/ # Generated (git-ignored)
-│ ├── chroma/ # Vector embeddings
-│ └── chatbot.db # Chat history
-├── logs/ # Rotating log files (git-ignored)
-├── .cursor/rules
-├── .github/workflows/ci.yml
-├── .env
-├── .env.example
-├── .gitignore
-├── .python-version
-├── pyproject.toml
-├── uv.lock
-└── main.py
----
 
 ## 🧠 How It Works
 

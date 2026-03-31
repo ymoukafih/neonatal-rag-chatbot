@@ -141,22 +141,22 @@ uv run ruff format src/ tests/
 uv run python scripts/inspect_db.py
 ```
 
-Output example:
+Output example: 
 ═══════════════════════════════════════════════════════
-📊 ChromaDB Vector Store Report
+📊 ChromaDB Vector Store Report 
 ═══════════════════════════════════════════════════════
 
-Total chunks : 1842
+Total chunks : 1842 
 Unique papers : 312
-
-By source:
-- PubMed 1842 chunks
-
-By topic (top 5):
-- preterm infant care oxygen therapy 142
-- neonatal sepsis diagnosis treatment 128
-- neonatal hypoxic ischemic encephalopathy 118
-
+ 
+By source: 
+- PubMed 1842 chunks 
+ 
+By topic (top 5): 
+- preterm infant care oxygen therapy 142 
+- neonatal sepsis diagnosis treatment 128 
+- neonatal hypoxic ischemic encephalopathy 118 
+ 
 ---
 
 ## ⚠️ Medical Disclaimer

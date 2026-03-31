@@ -1,0 +1,28 @@
+# Neonatal RAG Chatbot — Cursor Rules
+
+## Stack
+- Python 3.11
+- LangChain + Ollama (local LLMs)
+- ChromaDB vector store
+- Gradio UI
+- SQLite database
+- uv for package management (never suggest pip)
+- ruff for linting and formatting
+
+## Code Style
+- Always use type hints on all functions
+- Max line length: 88 characters
+- Use Pydantic BaseSettings for all config
+- Write docstrings for all public functions
+- Prefer early returns over nested if/else
+
+## Project Structure
+- All config in src/config/settings.py
+- All DB logic in src/database/crud.py
+- All RAG logic in src/rag/chain.py
+- UI entry point is src/ui/app.py
+
+## Commands
+- Install packages: uv add <package>
+- Run app: uv run python -m src.ui.app
+- Format: uv run ruff format src/

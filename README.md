@@ -145,6 +145,7 @@ Output example:
 ═══════════════════════════════════════════════════════
 📊 ChromaDB Vector Store Report
 ═══════════════════════════════════════════════════════
+
 Total chunks : 1842
 Unique papers : 312
 
@@ -155,7 +156,6 @@ By topic (top 5):
 - preterm infant care oxygen therapy 142
 - neonatal sepsis diagnosis treatment 128
 - neonatal hypoxic ischemic encephalopathy 118
-
 
 ---
 

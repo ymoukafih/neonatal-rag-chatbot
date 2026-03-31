@@ -123,16 +123,15 @@ neonatal-rag-chatbot/
 │ ├── chroma/ # Vector embeddings
 │ └── chatbot.db # Chat history
 ├── logs/ # Rotating log files (git-ignored)
-├── .cursor/rules # Cursor AI assistant rules
-├── .github/workflows/ci.yml # GitHub Actions CI/CD
-├── .env # Local secrets (git-ignored)
-├── .env.example # Template for new developers
+├── .cursor/rules
+├── .github/workflows/ci.yml
+├── .env
+├── .env.example
 ├── .gitignore
 ├── .python-version
 ├── pyproject.toml
 ├── uv.lock
 └── main.py
-
 ---
 
 ## 🧠 How It Works

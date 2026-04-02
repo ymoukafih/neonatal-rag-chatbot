@@ -1,13 +1,25 @@
 # Neonatal RAG Chatbot — Cursor Rules
 
+
 ## Stack
-- Python 3.11
+- Python 3.12
 - LangChain + Ollama (local LLMs)
-- ChromaDB vector store
+- Qdrant vector store (local embedded mode, no server)
+- BGE-M3 multilingual embeddings (Arabic, French, English, Darija)
+- BGE-reranker-v2-m3 cross-encoder reranker
+- BM25 hybrid search alongside Qdrant
 - Gradio UI
 - SQLite database
 - uv for package management (never suggest pip)
 - ruff for linting and formatting
+
+
+## Retrieval Pipeline
+- Hybrid: BM25 (lexical) + Qdrant (semantic) → cross-encoder reranking
+- BM25 index persisted at ./data/bm25_index.pkl
+- Qdrant persisted at ./data/qdrant/
+- Reranker: BAAI/bge-reranker-v2-m3 (multilingual, handles Arabic + Darija + French)
+
 
 ## Code Style
 - Always use type hints on all functions
@@ -15,14 +27,21 @@
 - Use Pydantic BaseSettings for all config
 - Write docstrings for all public functions
 - Prefer early returns over nested if/else
+- Use ConfigDict(arbitrary_types_allowed=True) for Pydantic v2 models
+
 
 ## Project Structure
 - All config in src/config/settings.py
 - All DB logic in src/database/crud.py
-- All RAG logic in src/rag/chain.py
+- All vector store logic in src/vectorstore/store.py (Qdrant + BM25 + reranker)
+- All RAG chain logic in src/rag/chain.py
+- All prompts in src/rag/prompts.py
 - UI entry point is src/ui/app.py
+
 
 ## Commands
 - Install packages: uv add <package>
 - Run app: uv run python -m src.ui.app
 - Format: uv run ruff format src/
+- Ingest data: uv run python scripts/ingest.py
+- Run agent: uv run python scripts/run_agent.py

@@ -2,6 +2,7 @@ import hashlib
 import logging
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from qdrant_client import QdrantClient
 
 from src.config.settings import get_settings
 from src.vectorstore.store import load_vectorstore, build_vectorstore, vectorstore_exists
@@ -15,15 +16,27 @@ def _make_doc_id(title: str, uid: str) -> str:
     return hashlib.sha256(key.encode()).hexdigest()[:20]
 
 
-def _get_existing_ids(vectorstore) -> set[str]:
-    """Fetch all doc_ids already stored in ChromaDB."""
+def _get_existing_ids() -> set[str]:
+    """Fetch all doc_ids already stored in Qdrant via scroll API."""
+    settings = get_settings()
     try:
-        data = vectorstore.get(include=["metadatas"])
-        return {
-            m.get("doc_id", "")
-            for m in data.get("metadatas", [])
-            if m.get("doc_id")
-        }
+        client = QdrantClient(path=settings.qdrant_path)
+        existing_ids: set[str] = set()
+        offset = None
+        while True:
+            batch, offset = client.scroll(
+                collection_name=settings.qdrant_collection_name,
+                with_payload=True,
+                limit=1000,
+                offset=offset,
+            )
+            for point in batch:
+                doc_id = point.payload.get("metadata", {}).get("doc_id")
+                if doc_id:
+                    existing_ids.add(doc_id)
+            if offset is None:
+                break
+        return existing_ids
     except Exception as e:
         logger.warning("Could not fetch existing IDs: %s", e)
         return set()
@@ -31,7 +44,7 @@ def _get_existing_ids(vectorstore) -> set[str]:
 
 def ingest_pubmed_results(results: list[dict]) -> tuple[int, int]:
     """
-    Chunk, deduplicate, and embed PubMed results into ChromaDB.
+    Chunk, deduplicate, and embed PubMed results into Qdrant.
     Creates the vector store on first run if it does not exist yet.
     """
     if not results:
@@ -45,18 +58,12 @@ def ingest_pubmed_results(results: list[dict]) -> tuple[int, int]:
         separators=["\n\n", "\n", ". ", " ", ""],
     )
 
-    # Build documents first
     new_docs: list[Document] = []
     skipped = 0
-    existing_ids: set[str] = set()
 
     # Load existing IDs only if store already exists
-    if vectorstore_exists():
-        vectorstore = load_vectorstore()
-        existing_ids = _get_existing_ids(vectorstore)
-    else:
-        logger.info("No vector store found — will create on first ingest.")
-        vectorstore = None
+    existing_ids: set[str] = _get_existing_ids() if vectorstore_exists() else set()
+    vectorstore = load_vectorstore() if vectorstore_exists() else None
 
     for record in results:
         doc_id = _make_doc_id(record["title"], record["uid"])
@@ -95,11 +102,9 @@ def ingest_pubmed_results(results: list[dict]) -> tuple[int, int]:
 
     if new_docs:
         if vectorstore is None:
-            # First ever run — build the store from scratch
             build_vectorstore(new_docs)
             logger.info("✅ Vector store created with %d chunks.", len(new_docs))
         else:
-            # Store already exists — just add new documents
             vectorstore.add_documents(new_docs)
             logger.info("✅ Added %d new chunks to existing store.", len(new_docs))
 

@@ -1,177 +1,169 @@
-# 🩺 Neonatal RAG Chatbot
+🩺 Neonatal RAG Chatbot
+A local-first, privacy-preserving Retrieval-Augmented Generation (RAG) chatbot for neonatal clinical decision support. Built with Ollama LLMs, Qdrant vector search, hybrid BM25 retrieval, cross-encoder reranking, and a Gradio web interface.
+________________________________________
+✨ Features
+•	Hybrid Retrieval — BM25 (lexical) + Qdrant (semantic) search combined for maximum recall
+•	Cross-Encoder Reranking — BGE-reranker-v2-m3 reranks candidates for precision
+•	Local-first — All models run locally via Ollama; no data leaves your machine
+•	Multilingual — BGE-M3 embeddings support Arabic, French, English, and Darija
+•	Session History — Conversations persisted to SQLite with source tracking
+•	Gradio UI — Clean chat interface with multi-session support
+________________________________________
+🏗️ Architecture
+User Query
+    │
+    ▼
+┌─────────────────────────────────┐
+│         Gradio UI (port 7860)   │
+└────────────────┬────────────────┘
+                 │
+    ┌────────────▼────────────┐
+    │      RAG Chain          │
+    │   (LangChain + Ollama)  │
+    └────────────┬────────────┘
+                 │
+    ┌────────────▼────────────┐
+    │    HybridRetriever      │
+    │  BM25 + Qdrant + BGE    │
+    │     Reranker v2-m3      │
+    └────────────┬────────────┘
+                 │
+    ┌────────────▼────────────┐
+    │   Qdrant (local disk)   │
+    │   BM25 index (pickle)   │
+    └─────────────────────────┘
 
-A **local-first** Retrieval-Augmented Generation (RAG) chatbot for neonatal clinical decision support. Combines Ollama LLMs with ChromaDB vector search and LangChain orchestration for privacy-preserving medical Q&A.
-
----
-
-## 🏗️ Architecture
-PubMed Agent (LangGraph)
-↓ fetches + embeds 60 neonatal topics
-ChromaDB Vector Store (local, persistent)
-↓ semantic search (MMR retrieval)
-LangChain RAG Chain
-↓ generates grounded answer
-Gradio Chat UI → http://localhost:7860
-
----
-
-## 🛠️ Tech Stack
-
-| Component | Technology | Why |
-|---|---|---|
-| **LLM** | Ollama (local) | 100% private, no API cost, works offline |
-| **Embeddings** | nomic-embed-text | Best open-source medical embeddings |
-| **Vector Store** | ChromaDB | Local persistence, zero cloud dependency |
-| **Orchestration** | LangChain + LangGraph | Industry standard, conversation memory |
-| **Data Agent** | LangGraph + PubMed API | Auto-builds knowledge base from literature |
-| **Full Text** | NCBI BioC API | Fetches open-access full papers (~40% of results) |
-| **UI** | Gradio | Native ChatInterface, zero frontend code |
-| **Config** | Pydantic Settings | Typed, validated, .env-based |
-| **Database** | SQLite | Lightweight chat history persistence |
-| **Package Manager** | uv | 10–100x faster than pip |
-| **Linting** | ruff | Fastest Python linter |
-| **Testing** | pytest + pytest-cov | Full test coverage |
-
----
-
-## ⚡ Quick Start
-
-### Prerequisites
-
-```bash
-# 1. Install Ollama from https://ollama.com/download
-
-# 2. Pull required models
-ollama pull llama3.2
-ollama pull nomic-embed-text
-```
-
-### Installation
-
-```bash
-# Clone the repo
-git clone https://github.com/youness-moukafih/neonatal-rag-chatbot
+________________________________________
+📋 Requirements
+•	Python 3.12+
+•	uv package manager
+•	Ollama running locally
+________________________________________
+🚀 Quick Start
+1. Clone & Install
+git clone https://github.com/your-org/neonatal-rag-chatbot.git
 cd neonatal-rag-chatbot
-
-# Create virtual environment
-uv venv --python 3.12
-
-# Activate it
-.venv\Scripts\Activate.ps1    # Windows PowerShell
-source .venv/bin/activate      # Mac / Linux
-
-# Install all dependencies
 uv sync
+uv pip install -e .
 
-# Copy environment config
-cp .env.example .env
-```
+2. Start Ollama & Pull Models
+# Pull the LLM
+ollama pull llama3.2
 
-### Build the Knowledge Base
+# Pull the embedding model
+ollama pull nomic-embed-text
 
-```bash
-# Fetch 60 neonatal topics from PubMed + PMC full text
-# Run once — takes ~10 minutes, persists to data/chroma/
-uv run python scripts/run_agent.py
-```
+3. Configure Environment (Optional)
+Copy and edit the environment file:
+copy .env.example .env
 
-### Launch the Chatbot
-
-```bash
-uv run python main.py
-# Open your browser at http://localhost:7860
-```
-
-
-
-## 🧠 How It Works
-
-### 1. Knowledge Building (run once)
-The LangGraph agent automatically:
-- Searches PubMed for **60 predefined neonatal topics**
-- Fetches **full text** for Open Access papers via PMC BioC API (~40% of results)
-- **Deduplicates** papers by PubMed UID across all topic runs
-- **Chunks and embeds** everything into ChromaDB using `nomic-embed-text`
-
-### 2. Question Answering (at runtime)
-For every user question:
-1. **MMR retrieval** fetches the top-5 most relevant chunks from ChromaDB
-2. Retrieved context is injected into the **clinical system prompt**
-3. Ollama LLM generates an answer **strictly grounded in the retrieved context**
-4. Conversation history is passed for **multi-turn coherence**
-5. The full exchange is **persisted to SQLite** for session review
-
----
-
-## 🔧 Configuration
-
-All configuration lives in `.env`:
-
-```env
+Key settings in .env:
 OLLAMA_MODEL=llama3.2
-EMBEDDING_MODEL=nomic-embed-text
-CHROMA_COLLECTION_NAME=neonatal_knowledge
+EMBEDDING_MODEL=BAAI/bge-m3
+RERANKER_MODEL=BAAI/bge-reranker-v2-m3
 TOP_K_RESULTS=5
-CHUNK_SIZE=512
-CHUNK_OVERLAP=64
+RERANKER_FETCH_K=20
 APP_PORT=7860
-LOG_LEVEL=INFO
-```
 
----
+4. Run the Ingestion Agent
+This scrapes the neonatal knowledge base, embeds it, and builds the vector stores:
+uv run python scripts/run_agent.py
 
-## 🧪 Testing
+⏳ First run only — downloads BGE-M3 (~2.3 GB) and builds Qdrant + BM25 indexes. Takes 5–15 minutes on CPU. Subsequent runs are instant.
+5. Launch the App
+uv run python src/ui/app.py
 
-```bash
-# Run full test suite with coverage
-uv run pytest tests/ -v --cov=src --cov-report=term-missing
+Open your browser at http://localhost:7860
+________________________________________
+📁 Project Structure
+neonatal-rag-chatbot/
+├── src/
+│   ├── config/
+│   │   └── settings.py          # Pydantic settings (reads .env)
+│   ├── database/
+│   │   └── crud.py              # SQLite session & message persistence
+│   ├── ingestion/
+│   │   └── loader.py            # Document loading & chunking
+│   ├── rag/
+│   │   ├── chain.py             # RAG chain (LangChain + Ollama)
+│   │   └── prompts.py           # System & RAG prompt templates
+│   ├── vectorstore/
+│   │   └── store.py             # Qdrant + BM25 + HybridRetriever
+│   └── ui/
+│       └── app.py               # Gradio chat interface
+├── scripts/
+│   ├── run_agent.py             # Ingestion agent (scrape → embed → index)
+│   ├── monitor.py               # Live ingestion monitor (second terminal)
+│   └── inspect_db.py            # Inspect SQLite chat history
+├── data/                        # Auto-created by run_agent.py
+│   ├── qdrant/                  # Qdrant vector store (local disk)
+│   ├── bm25_index.pkl           # BM25 index
+│   ├── bm25_docs.pkl            # BM25 document corpus
+│   └── chatbot.db               # SQLite session history
+├── .env.example                 # Environment variable template
+├── pyproject.toml
+└── README.md
 
-# Run linter
-uv run ruff check src/ tests/
+________________________________________
+🔍 Retrieval Pipeline
+The HybridRetriever runs a 4-step pipeline on every query:
+Step	Method	Purpose
+1	BM25 (Okapi)	Lexical keyword matching — top fetch_k candidates
+2	Qdrant HNSW	Semantic similarity search — top fetch_k candidates
+3	Deduplication	Merge results on first 100 chars, remove duplicates
+4	BGE Reranker	Cross-encoder reranking → return top k results
 
-# Format code
-uv run ruff format src/ tests/
-```
+Default values: fetch_k=20, top_k=5 (configurable in .env).
+________________________________________
+🩺 Monitoring Ingestion
+While run_agent.py is running in Terminal 1, open Terminal 2 and watch progress live:
+uv run python scripts/monitor.py
 
----
-
-## 📊 Inspect Your Knowledge Base
-
-```bash
+It refreshes every 5 seconds showing file sizes, document count, and a chunk preview.
+________________________________________
+🗄️ Inspect Chat History
 uv run python scripts/inspect_db.py
-```
 
-Output example: 
-═══════════════════════════════════════════════════════
-📊 ChromaDB Vector Store Report 
-═══════════════════════════════════════════════════════
+________________________________________
+⚙️ Configuration Reference
+All settings are in src/config/settings.py and can be overridden via .env:
+Variable	Default	Description
+OLLAMA_MODEL	llama3.2	LLM used for answer generation
+OLLAMA_BASE_URL	http://localhost:11434	Ollama server URL
+OLLAMA_TEMPERATURE	0.1	LLM sampling temperature
+EMBEDDING_MODEL	BAAI/bge-m3	HuggingFace embedding model
+RERANKER_MODEL	BAAI/bge-reranker-v2-m3	Cross-encoder reranker
+QDRANT_PATH	./data/qdrant	Local Qdrant storage path
+QDRANT_COLLECTION_NAME	neonatal_knowledge	Qdrant collection name
+TOP_K_RESULTS	5	Final documents returned to LLM
+RERANKER_FETCH_K	20	Candidates fetched before reranking
+CHUNK_SIZE	512	Token chunk size for splitting
+CHUNK_OVERLAP	64	Token overlap between chunks
+APP_PORT	7860	Gradio server port
+LOG_LEVEL	INFO	Logging verbosity
 
-Total chunks : 1842 
-Unique papers : 312
- 
-By source: 
-- PubMed 1842 chunks 
- 
-By topic (top 5): 
-- preterm infant care oxygen therapy 142 
-- neonatal sepsis diagnosis treatment 128 
-- neonatal hypoxic ischemic encephalopathy 118 
- 
----
+________________________________________
+🛠️ Development
+# Install dev dependencies
+uv sync --group dev
 
-## ⚠️ Medical Disclaimer
+# Run tests
+uv run pytest
 
-This tool is intended to **support** clinical decision-making, not replace it. Always apply professional clinical judgment and follow your institution's protocols. Never use AI-generated medical information without verification from a qualified clinician.
+# Lint & format
+uv run ruff check .
+uv run ruff format .
 
----
+________________________________________
+📊 Data Folder (Auto-generated)
+The ./data/ folder is never committed to Git — it is created automatically by the ingestion script. Add it to .gitignore:
+data/
 
-## 📄 License
-
-MIT License — see [LICENSE](LICENSE) for details.
-
----
-
-## 👤 Author
-
-**Youness Moukafih**
-Built with LangChain, LangGraph, ChromaDB, Ollama, and Gradio.
+________________________________________
+⚠️ Windows Notes
+•	The msvcrt warning from Qdrant on shutdown is harmless — a known Windows file-lock cleanup issue
+•	The HuggingFace symlink warning is harmless — cache works in degraded mode using slightly more disk space
+•	Use $env:PYTHONPATH = "." if you get ModuleNotFoundError: No module named 'src' (fixed permanently by uv pip install -e .)
+________________________________________
+📄 License
+MIT

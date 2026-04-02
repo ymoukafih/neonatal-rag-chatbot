@@ -1,14 +1,15 @@
 import logging
+
 from langchain_ollama import ChatOllama
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain_core.output_parsers import StrOutputParser
-from langchain_core.runnables import RunnablePassthrough, RunnableParallel
-from langchain_core.messages import HumanMessage, AIMessage
 from langchain_core.documents import Document
+from langchain_core.messages import AIMessage, HumanMessage
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.runnables import RunnableLambda
 
 from src.config.settings import get_settings
+from src.rag.prompts import NEONATAL_SYSTEM_PROMPT
 from src.vectorstore.store import get_retriever
-from src.rag.prompts import NEONATAL_SYSTEM_PROMPT   # ← import from prompts.py
 
 logger = logging.getLogger(__name__)
 
@@ -38,17 +39,17 @@ def build_rag_chain():
     llm = get_llm()
 
     prompt = ChatPromptTemplate.from_messages([
-        ("system", NEONATAL_SYSTEM_PROMPT),   # ← use imported prompt
+        ("system", NEONATAL_SYSTEM_PROMPT),
         MessagesPlaceholder(variable_name="chat_history"),
-        ("human", "{question}"),
+        ("human", "Context:\n{context}\n\nQuestion:\n{question}"),
     ])
 
     chain = (
-        RunnableParallel({
-            "context": retriever | format_docs,
-            "question": RunnablePassthrough(),
-            "chat_history": RunnablePassthrough(),
-        })
+        {
+            "context": RunnableLambda(lambda x: x["question"]) | retriever | format_docs,
+            "question": RunnableLambda(lambda x: x["question"]),
+            "chat_history": RunnableLambda(lambda x: x["chat_history"]),
+        }
         | prompt
         | llm
         | StrOutputParser()
